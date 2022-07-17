@@ -1,5 +1,10 @@
 """
 Gatys Content Model.
+
+References:
+    [1] Gatys, Ecker, Bethge - A Neural Algorithm of Artistic Style, 2015.
+    [2] Johnson, Alahi, Fei-Fei - Perceptual Losses for Real-Time Style
+        Transfer and Super-Resolution, 2016.
 """
 
 __all__ = [
