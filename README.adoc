@@ -1,0 +1,7 @@
+= NSTesia - Python Library for Neural Style Transfer
+Malte Dehling <mdehling@gmail.com>
+
+:gh-nst: https://github.com/mdehling/neural-style-transfer/
+
+See my repository {gh-nst}[neural-style-transfer] for a demonstration of this
+library and links to the relevant literature.
