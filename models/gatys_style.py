@@ -23,25 +23,57 @@ def avg_gram_tensor(Fl):
         / tf.cast(height*width*channels, tf.float32)
 
 
+def init_vgg16():
+    base_model = tf.keras.applications.vgg16.VGG16(
+        include_top=False, weights='imagenet'
+    )
+    # Layers as used by Johnson et al [3].
+    style_layers = [
+        'block1_conv2',
+        'block2_conv2',
+        'block3_conv3',
+        'block4_conv3',
+    ]
+    preprocess = tf.keras.applications.vgg16.preprocess_input
+
+    return base_model, style_layers, preprocess
+
+
+def init_vgg19():
+    base_model = tf.keras.applications.vgg19.VGG19(
+        include_top=False, weights='imagenet'
+    )
+    # Layers as used by Gatys et al [1,2].
+    style_layers = [
+        "block1_conv1",
+        "block2_conv1",
+        "block3_conv1",
+        "block4_conv1",
+        "block5_conv1",
+    ]
+    preprocess = tf.keras.applications.vgg19.preprocess_input
+
+    return base_model, style_layers, preprocess
+
+
+init_model = {
+    'vgg16':    init_vgg16,
+    'vgg19':    init_vgg19,
+}
+
+
 class GatysStyle(tf.keras.models.Model):
 
+    # TODO: Take style_layers and preprocess as parameters and allow model to
+    # be a keras model instead of a string.
     def __init__(self, model='vgg16'):
         """
         Initialize a GatysStyle model instance.
         """
-        if model == 'vgg16':
-            base_model = tf.keras.applications.vgg16.VGG16(
-                include_top=False, weights='imagenet'
-            )
-            style_layers = [
-                'block1_conv2',
-                'block2_conv2',
-                'block3_conv3',
-                'block4_conv3'
-            ]
-            preprocess = tf.keras.applications.vgg16.preprocess_input
-        else:
-            raise ValueError("Only model 'vgg16' supported for now.")
+        try:
+            base_model, style_layers, preprocess = init_model[model]()
+        except KeyError:
+            raise ValueError(f"Model '{model}' not supported.")
 
         base_model.trainable = False
 
