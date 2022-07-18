@@ -1,0 +1,4 @@
+tensorflow ~= 2.8.2
+tensorflow-datasets
+matplotlib
+ipykernel
