@@ -205,7 +205,7 @@ class JohnsonStyleTransfer(tf.keras.models.Sequential):
     @classmethod
     def from_checkpoint(cls, file):
         custom_objects = {
-            'JohnsonStyleTransfer': JohnsonStyleTransfer,
+            'JohnsonStyleTransfer': tf.keras.models.Sequential,
             'ReflectionPadding2D':  nst_layers.ReflectionPadding2D,
             'ConvBlock':            ConvBlock,
             'ResBlock':             ResBlock,
