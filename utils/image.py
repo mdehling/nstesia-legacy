@@ -12,16 +12,20 @@ import tensorflow as tf
 import matplotlib.pyplot as plt
 
 
-def load_images(files, target_size=(256,256)):
+def load_images(files, min_dim=None, target_size=None):
     """
     Load images from files.
 
     Args:
         files:  A filename or list of filenames to load.
+        min_dim:
+                Minimum desired dimension (height or width).  The image is
+                resized so that its shorter side fits this dimension while
+                keeping the aspect ratio.  Takes precedence over target_size.
         target_size:
                 A tuple (height,width) to resize each image to or None to keep
-                the original size.  In the latter case, the height and width of
-                all loaded images must match.
+                the original size.  In the latter case, the height and width
+                of all loaded images must match.
 
     Returns:
         A 4-D tensor of shape (N, height, width, channels) of the N images.
@@ -31,11 +35,19 @@ def load_images(files, target_size=(256,256)):
 
     image_tensors = []
     for file in files:
-        image = tf.keras.utils.load_img(file, target_size=target_size,
-                                        interpolation='bicubic')
-        image_tensors.append(
-            tf.keras.utils.img_to_array(image, dtype="float32")
-        )
+        image = tf.keras.utils.load_img(file)
+        image_tensor = tf.keras.utils.img_to_array(image, dtype="float32")
+
+        if min_dim is not None:
+            image_height, image_width, _ = tf.shape(image_tensor).numpy()
+            short_dim = min(image_height, image_width)
+            target_size = ( int( image_height/short_dim * min_dim ),
+                            int( image_width /short_dim * min_dim ) )
+
+        if target_size is not None:
+            image_tensor = tf.image.resize(image_tensor, target_size)
+
+        image_tensors.append(image_tensor)
 
     return tf.stack(image_tensors, axis=0)
 
@@ -61,25 +73,38 @@ def save_images(images, path):
         tf.keras.utils.save_img(path.format(i=i), images[i])
 
 
-def show_images(images, title=None, n_cols=4, width=20):
+def show_images(image_tensors, title=None, n_cols=4, width=20):
     """
     Show images on a grid.
 
     Args:
-        images: A 4-D tensor of shape (N, height, width, channels) or a list of
-                such with matching (height, width, channels).
-        title:  Either None or a format string to be used as the title for each
-                image.
+        image_tensors:
+                A 4-D tensor of shape (N, height, width, channels) or a list
+                of such.
+        title:  Either None or a format string to be used as the title for
+                each image.
         n_cols: The number of columns in the grid.
         width:  The total width of the grid.
     """
-    if isinstance(images, list):
-        images = tf.concat(images, axis=0)
+    if not isinstance(image_tensors, list):
+        image_tensors = [ image_tensors ]
 
-    N, image_height, image_width, channels = tf.shape(images).numpy()
+    # list of 3-D tensors of shape (height,width,channels)
+    images = [
+        image   for image_tensor in image_tensors
+                for image in tf.unstack(image_tensor, axis=0)
+    ]
+
+    N = len(images)
+
+    image_heights = [ tf.shape(image).numpy()[0] for image in images ]
+    image_widths = [ tf.shape(image).numpy()[1] for image in images ]
+
+    max_image_height = max(image_heights)
+    max_image_width = max(image_widths)
 
     n_rows = (N-1) // n_cols + 1
-    height = n_rows * (width/n_cols) * (image_height/image_width)
+    height = n_rows * (width/n_cols) * (max_image_height/max_image_width)
 
     fig, axs = plt.subplots(n_rows, n_cols, figsize=(width,height))
     [ ax.set_axis_off() for ax in axs.ravel() ]
