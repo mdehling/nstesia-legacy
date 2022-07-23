@@ -73,7 +73,7 @@ def save_images(images, path):
         tf.keras.utils.save_img(path.format(i=i), images[i])
 
 
-def show_images(image_tensors, title=None, n_cols=4, width=20):
+def show_images(image_tensors, titles=None, n_cols=4, width=20):
     """
     Show images on a grid.
 
@@ -81,8 +81,7 @@ def show_images(image_tensors, title=None, n_cols=4, width=20):
         image_tensors:
                 A 4-D tensor of shape (N, height, width, channels) or a list
                 of such.
-        title:  Either None or a format string to be used as the title for
-                each image.
+        titles: Either None or a list of titles - one for each image.
         n_cols: The number of columns in the grid.
         width:  The total width of the grid.
     """
@@ -111,5 +110,5 @@ def show_images(image_tensors, title=None, n_cols=4, width=20):
 
     for idx, ax in zip(range(N),axs.ravel()):
         ax.imshow(tf.keras.utils.array_to_img(images[idx]))
-        if title is not None:
-            ax.set_title(title.format(i=idx))
+        if titles is not None:
+            ax.set_title(titles[idx])
