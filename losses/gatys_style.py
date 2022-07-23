@@ -12,7 +12,7 @@ import nstesia.models as nst_models
 
 class GatysStyle(tf.keras.losses.Loss):
 
-    def __init__(self, style_image, model='vgg16', **kwargs):
+    def __init__(self, style_image=None, model='vgg16', **kwargs):
         super().__init__(**kwargs)
 
         self.style_image = style_image
@@ -22,10 +22,13 @@ class GatysStyle(tf.keras.losses.Loss):
         else:
             self.style_model = model
 
-        self.style_targets = self.style_model(self.style_image)
+        if self.style_image is not None:
+            self.style_targets = self.style_model(self.style_image)
+        else:
+            self.style_targets = None
 
-    def call(self, content_image, stylized_image):
-        style_targets = self.style_targets
+    def call(self, style_image, stylized_image):
+        style_targets = self.style_targets or self.style_model(style_image)
         style_features = self.style_model(stylized_image)
 
         style_layer_losses = [

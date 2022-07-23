@@ -7,6 +7,7 @@ __all__ = [
     'layers',
     'losses',
     'models',
+    'applications',
 ]
 
 from . import *

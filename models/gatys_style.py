@@ -71,13 +71,25 @@ def init_vgg19():
     base_model = tf.keras.applications.vgg19.VGG19(
         include_top=False, weights='imagenet'
     )
-    # Layers as used by Gatys et al [1,2].
+    # Gatys et al [1] initially use all layers of the vgg19 network up to and
+    # include block4_pool.
     style_layers = [
         "block1_conv1",
+        "block1_conv2",
+        "block1_pool",
         "block2_conv1",
+        "block2_conv2",
+        "block2_pool",
         "block3_conv1",
+        "block3_conv2",
+        "block3_conv3",
+        "block3_conv4",
+        "block3_pool",
         "block4_conv1",
-        "block5_conv1",
+        "block4_conv2",
+        "block4_conv3",
+        "block4_conv4",
+        "block4_pool",
     ]
     preprocess = tf.keras.applications.vgg19.preprocess_input
 

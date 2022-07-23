@@ -1,5 +1,5 @@
 """
-Variation Loss.
+Anisotropic Total Variation Loss.
 """
 
 __all__ = [
