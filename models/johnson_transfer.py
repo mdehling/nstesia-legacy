@@ -8,8 +8,8 @@ __all__ = [
 
 import tensorflow as tf
 import tensorflow.keras.layers as k_layers
-import nstesia.layers as nst_layers
-import nstesia.losses as nst_losses
+from .. import layers as nst_layers
+from .. import losses as nst_losses
 
 
 normalization_layer = {

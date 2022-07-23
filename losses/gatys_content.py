@@ -7,7 +7,7 @@ __all__ = [
 ]
 
 import tensorflow as tf
-import nstesia.models as nst_models
+from .. import models as nst_models
 
 
 class GatysContent(tf.keras.losses.Loss):
