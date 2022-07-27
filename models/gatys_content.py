@@ -14,30 +14,33 @@ __all__ = [
 import tensorflow as tf
 
 
-def init_vgg16():
+def init_vgg16(cfg=None):
     base_model = tf.keras.applications.vgg16.VGG16(
         include_top=False, weights='imagenet'
     )
     # Layers as used by Johnson et al [2].
-    content_layers = [
-        'block3_conv3',
-    ]
+    content_layers = {
+        'johnson2016': [ 'block3_conv3' ],
+        'gatys2015b':  [ 'block3_conv3' ],
+    }
     preprocess = tf.keras.applications.vgg16.preprocess_input
 
-    return base_model, content_layers, preprocess
+    return base_model, content_layers[cfg or 'johnson2016'], preprocess
 
 
-def init_vgg19():
+def init_vgg19(cfg=None):
     base_model = tf.keras.applications.vgg19.VGG19(
         include_top=False, weights='imagenet'
     )
     # Layers as used by Gatys et al [1].
-    content_layers = [
-        "block5_conv2",
-    ]
+    content_layers = {
+        'gatys2015a-1': [ 'block5_conv2' ],
+        'gatys2015a-2': [ 'block5_conv2' ],
+        'gatys2015b':   [ 'block5_conv2' ],
+    }
     preprocess = tf.keras.applications.vgg19.preprocess_input
 
-    return base_model, content_layers, preprocess
+    return base_model, content_layers[cfg or 'gatys2015b'], preprocess
 
 
 init_model = {
@@ -55,9 +58,11 @@ class GatysContent(tf.keras.models.Model):
         Initialize a GatysContent model instance.
         """
         try:
-            base_model, content_layers, preprocess = init_model[model]()
+            model = str.split(model, ':')
+            base_model, content_layers, preprocess = \
+                init_model[model[0]](*model[1:])
         except KeyError:
-            raise ValueError(f"Model '{model}' not supported.")
+            raise ValueError(f"Model '{model[0]}' not supported.")
 
         base_model.trainable = False
 
