@@ -51,49 +51,81 @@ def avg_gram_tensor(Fl, T1=identity, T2=identity):
         / tf.cast(height*width*channels, tf.float32)
 
 
-def init_vgg16():
+def init_vgg16(cfg=None):
     base_model = tf.keras.applications.vgg16.VGG16(
         include_top=False, weights='imagenet'
     )
-    # Layers as used by Johnson et al [3].
-    style_layers = [
-        'block1_conv2',
-        'block2_conv2',
-        'block3_conv3',
-        'block4_conv3',
-    ]
+
+    style_layer_weights = {
+        # Layers as used by Johnson et al [3].
+        'johnson2016': [
+            ('block1_conv2', 1),
+            ('block2_conv2', 1),
+            ('block3_conv3', 1),
+            ('block4_conv3', 1),
+        ],
+        # Based on Gatys' choices for VGG19.
+        'gatys2015b': [
+            ('block1_conv1', 1/8),
+            ('block2_conv1', 1/2),
+            ('block3_conv1', 2),
+            ('block4_conv1', 8),
+        ],
+    }
     preprocess = tf.keras.applications.vgg16.preprocess_input
 
-    return base_model, style_layers, preprocess
+    return base_model, style_layer_weights[cfg or 'johnson2016'], preprocess
 
 
-def init_vgg19():
+def init_vgg19(cfg=None):
     base_model = tf.keras.applications.vgg19.VGG19(
         include_top=False, weights='imagenet'
     )
-    # Gatys et al [1] initially use all layers of the vgg19 network up to and
-    # include block4_pool.
-    style_layers = [
-        "block1_conv1",
-        "block1_conv2",
-        "block1_pool",
-        "block2_conv1",
-        "block2_conv2",
-        "block2_pool",
-        "block3_conv1",
-        "block3_conv2",
-        "block3_conv3",
-        "block3_conv4",
-        "block3_pool",
-        "block4_conv1",
-        "block4_conv2",
-        "block4_conv3",
-        "block4_conv4",
-        "block4_pool",
-    ]
+
+    style_layer_weights = {
+        # Gatys et al initially use all layers of the vgg19 network up to
+        # and including block4_pool in their work on texture synthesis [1].
+        'gatys2015a-1': [
+            ("block1_conv1", 1/16),
+            ("block1_conv2", 1/16),
+            ("block1_pool", 1/4),
+            ("block2_conv1", 1/4),
+            ("block2_conv2", 1/4),
+            ("block2_pool", 1),
+            ("block3_conv1", 1),
+            ("block3_conv2", 1),
+            ("block3_conv3", 1),
+            ("block3_conv4", 1),
+            ("block3_pool", 4),
+            ("block4_conv1", 4),
+            ("block4_conv2", 4),
+            ("block4_conv3", 4),
+            ("block4_conv4", 4),
+            ("block4_pool", 16),
+        ],
+        # In their results they mention reducing the number of parameters by
+        # only using the following layers.
+        'gatys2015a-2': [
+            ("block1_conv1", 1/16),
+            ("block1_pool", 1/4),
+            ("block2_pool", 1),
+            ("block3_pool", 4),
+            ("block4_pool", 16),
+        ],
+        # The same authors use different layers in their later work on neural
+        # stylization [2].
+        'gatys2015b': [
+            ("block1_conv1", 1/16),
+            ("block2_conv1", 1/4),
+            ("block3_conv1", 1),
+            ("block4_conv1", 4),
+            ("block5_conv1", 16),
+        ],
+    }
+
     preprocess = tf.keras.applications.vgg19.preprocess_input
 
-    return base_model, style_layers, preprocess
+    return base_model, style_layer_weights[cfg or 'gatys2015b'], preprocess
 
 
 init_model = {
@@ -115,7 +147,9 @@ class GatysStyle(tf.keras.models.Model):
 
         Args:
             model:  A string indicating which CNN to use for feature
-                    extraction, e.g., 'vgg19'.
+                    extraction, e.g., 'vgg19'.  Optionally followed by a colon
+                    and a string indicating which predefined configuration to
+                    use, e.g., 'vgg19:gatys2015a-1'.
             transformations:
                     A list of pairs of transformations to apply to the
                     left/right of the inner product computing the Gram tensor.
@@ -123,21 +157,24 @@ class GatysStyle(tf.keras.models.Model):
                     specifying [(identity,identity)].
         """
         try:
-            base_model, style_layers, preprocess = init_model[model]()
+            model = str.split(model, ':')
+            base_model, style_layer_weights, preprocess = \
+                init_model[model[0]](*model[1:])
         except KeyError:
-            raise ValueError(f"Model '{model}' not supported.")
+            raise ValueError(f"Model '{model[0]}' not supported.")
 
         base_model.trainable = False
 
         inputs = base_model.input
         outputs = tuple(
-            base_model.get_layer(name).output for name in style_layers
+            base_model.get_layer(name).output
+            for name, _ in style_layer_weights
         )
 
         super().__init__(inputs=inputs, outputs=outputs)
 
         self.base_model = base_model
-        self.style_layers = style_layers
+        self.style_layer_weights = style_layer_weights
         self.preprocess = preprocess
         self.transformations = transformations or [(identity,identity)]
 
@@ -147,7 +184,9 @@ class GatysStyle(tf.keras.models.Model):
         # Maybe one day AutoGraph will learn to handle list comprehensions.
         G_list = []
         for T1, T2 in self.transformations:
-            for Fl in F:
-                G_list.append( avg_gram_tensor(Fl, T1=T1, T2=T2) )
+            for layer_weight, Fl in zip(self.style_layer_weights, F):
+                G_list.append(
+                    layer_weight[1] * avg_gram_tensor(Fl, T1=T1, T2=T2)
+                )
 
         return tuple(G_list)
