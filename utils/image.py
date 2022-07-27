@@ -80,7 +80,8 @@ def show_images(image_tensors, titles=None, n_cols=4, width=20):
     Args:
         image_tensors:
                 A 4-D tensor of shape (N, height, width, channels) or a list
-                of such.
+                of such.  If a list, can contain None entries to leave a
+                space in the grid blank.
         titles: Either None or a list of titles - one for each image.
         n_cols: The number of columns in the grid.
         width:  The total width of the grid.
@@ -91,13 +92,16 @@ def show_images(image_tensors, titles=None, n_cols=4, width=20):
     # list of 3-D tensors of shape (height,width,channels)
     images = [
         image   for image_tensor in image_tensors
-                for image in tf.unstack(image_tensor, axis=0)
+                for image in ( tf.unstack(image_tensor, axis=0)
+                               if image_tensor is not None else [ None ] )
     ]
 
     N = len(images)
 
-    image_heights = [ tf.shape(image).numpy()[0] for image in images ]
-    image_widths = [ tf.shape(image).numpy()[1] for image in images ]
+    image_heights = [ tf.shape(image).numpy()[0] for image in images
+                                                 if image is not None ]
+    image_widths  = [ tf.shape(image).numpy()[1] for image in images
+                                                 if image is not None ]
 
     max_image_height = max(image_heights)
     max_image_width = max(image_widths)
@@ -109,6 +113,9 @@ def show_images(image_tensors, titles=None, n_cols=4, width=20):
     [ ax.set_axis_off() for ax in axs.ravel() ]
 
     for idx, ax in zip(range(N),axs.ravel()):
+        if images[idx] is None:
+            continue
+
         ax.imshow(tf.keras.utils.array_to_img(images[idx]))
         if titles is not None:
             ax.set_title(titles[idx])
