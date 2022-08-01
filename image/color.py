@@ -25,17 +25,19 @@ def rgb_to_y_cc(image_rgb):
     tensors.
 
     Args:
-        image_rgb:  A 4-D image tensor of shape (batch_size,height,width,3).
+        image_rgb:  A 4-D image tensor of shape (batch_size,height,width,3) or
+                    a 3-D image tensor of shape (height,width,3).
 
     Returns:
-        A pair of tensors of shapes (batch_size,height,width,1) and
-        (batch_size,height,width,2), the first being the luminance, the second
-        the chrominance tensor.
+        A pair of tensors 1 and 2 channels, respectively, the first being the
+        luminance, the second the chrominance tensor.
     """
-    # Apply the linear color transformation to each pixels RGB values.
-    image_ycc = tf.einsum('dc,byxc->byxd', A_RGB2YCbCr, image_rgb)
-
-    return image_ycc[:,:,:,0:1], image_ycc[:,:,:,1:3]
+    if image_rgb.shape.ndims == 3:
+        image_ycc = tf.einsum('dc,yxc->yxd', A_RGB2YCbCr, image_rgb)
+        return image_ycc[:,:,0:1], image_ycc[:,:,1:3]
+    else:
+        image_ycc = tf.einsum('dc,byxc->byxd', A_RGB2YCbCr, image_rgb)
+        return image_ycc[:,:,:,0:1], image_ycc[:,:,:,1:3]
 
 
 def y_cc_to_rgb(image_y, image_cc=None):
@@ -44,10 +46,12 @@ def y_cc_to_rgb(image_y, image_cc=None):
     tensor into a 3-channel RGB image tensor.
 
     Args:
-        image_y:    The luminance tensor of shape (batch_size,height,width,1).
-        image_cc:   The chrominance tensor of shape
-                    (batch_size,height,width,2) or None.  If None, the
-                    chrominance tensor is assumed to be all zero.
+        image_y:    A 4-D luminance tensor of shape (batch_size,height,width,1)
+                    or a 3-D tensor of shape (height,width,1).
+        image_cc:   A 4-D chrominance tensor of shape
+                    (batch_size,height,width,2), a 3-D tensor of shape
+                    (height,width,2), or None.  If None, the chrominance tensor
+                    is assumed to be all zero.
 
     Returns:
         An RGB image tensor of shape (batch_size,height,width,3) representing
@@ -59,4 +63,7 @@ def y_cc_to_rgb(image_y, image_cc=None):
 
     image_ycc = tf.concat([image_y, image_cc], axis=-1)
 
-    return tf.einsum('dc,byxc->byxd', A_YCbCr2RGB, image_ycc)
+    if image_ycc.shape.ndims == 3:
+        return tf.einsum('dc,yxc->yxd', A_YCbCr2RGB, image_ycc)
+    else:
+        return tf.einsum('dc,byxc->byxd', A_YCbCr2RGB, image_ycc)
