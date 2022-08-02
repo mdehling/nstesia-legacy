@@ -8,6 +8,8 @@ __all__ = [
 
 import tensorflow as tf
 import tensorflow.keras.layers as k_layers
+import tensorflow_addons as tfa
+
 from .. import layers as nst_layers
 from .. import losses as nst_losses
 
@@ -15,7 +17,7 @@ from .. import losses as nst_losses
 normalization_layer = {
     'none':     k_layers.Layer,
     'batch':    k_layers.BatchNormalization,
-    'instance': k_layers.LayerNormalization,
+    'instance': tfa.layers.InstanceNormalization,
 }
 
 ERRMSG_UNKNOWN_NORMALIZE_PARAMETER = (
