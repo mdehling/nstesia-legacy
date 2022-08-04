@@ -112,12 +112,16 @@ class DumoulinStyleTransfer(tf.keras.models.Model):
     Domoulin Style Transfer model.
     """
 
-    def __init__(self, n_styles=None, filters=(32, 64, 128), tanh_factor=150.0, **kwargs):
+    def __init__(self, style_images,
+        filters=(32, 64, 128), tanh_factor=150.0, **kwargs):
+
+        self.style_images = style_images
+        self.n_styles = len(style_images)
 
         f1, f2, f3 = filters
 
         x = k_layers.Input(shape=(None,None,3))
-        c = k_layers.Input(shape=(n_styles,))
+        c = k_layers.Input(shape=(self.n_styles,))
 
         y = nst_layers.ImagePreProcessing(name='preprocess')(x)
         y = nst_layers.ReflectionPadding2D(padding=(40,40), name='rpad')(y)
@@ -139,6 +143,30 @@ class DumoulinStyleTransfer(tf.keras.models.Model):
         y = nst_layers.ImagePostProcessing(name='postprocess')(y)
 
         super().__init__(inputs=(x,c), outputs=y, **kwargs)
+
+    def compile(self, optimizer, total_loss_fn, **kwargs):
+        super().compile(optimizer, **kwargs)
+        self.total_loss_fn = total_loss_fn
+
+    def train_step(self, data):
+        content_image = data[0]
+        style_index = data[1]
+
+        with tf.GradientTape() as tape:
+            style_vector = tf.one_hot(style_index, self.n_styles)
+            style_vector = tf.reshape(style_vector, (-1,self.n_styles))
+
+            generated_image = self((content_image,style_vector),
+                                    training=True)
+
+            total_loss = self.total_loss_fn(
+                (content_image,style_index), (generated_image,style_index)
+            )
+
+        gradients = tape.gradient(total_loss, self.trainable_variables)
+        self.optimizer.apply_gradients(zip(gradients,self.trainable_variables))
+
+        return { 'total_loss': total_loss }
 
     @classmethod
     def from_checkpoint(cls, file):
