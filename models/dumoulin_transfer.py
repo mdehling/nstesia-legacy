@@ -144,6 +144,8 @@ class DumoulinStyleTransfer(tf.keras.models.Model):
     def from_checkpoint(cls, file):
         custom_objects = {
             'DumoulinStyleTransfer':    tf.keras.models.Model,
+            'ImagePreProcessing':       nst_layers.ImagePreProcessing,
+            'ImagePostProcessing':      nst_layers.ImagePostProcessing,
             'ReflectionPadding2D':      nst_layers.ReflectionPadding2D,
             'ConvBlock':                ConvBlock,
             'ResBlock':                 ResBlock,
