@@ -156,11 +156,11 @@ class DumoulinStyleTransfer(tf.keras.models.Model):
             style_vector = tf.one_hot(style_index, self.n_styles)
             style_vector = tf.reshape(style_vector, (-1,self.n_styles))
 
-            generated_image = self((content_image,style_vector),
+            stylized_image = self((content_image,style_vector),
                                     training=True)
 
             total_loss = self.total_loss_fn(
-                (content_image,style_index), (generated_image,style_index)
+                (content_image,style_index), (stylized_image,style_index)
             )
 
         gradients = tape.gradient(total_loss, self.trainable_variables)

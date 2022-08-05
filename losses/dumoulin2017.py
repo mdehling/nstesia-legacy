@@ -4,13 +4,11 @@ Dumoulin Content/Style Losses.
 
 __all__ = [
     'DumoulinStyle',
-    'DumoulinContent',
 ]
 
 import tensorflow as tf
 
 from .. import models as nst_models
-from .. import losses as nst_losses
 
 
 class DumoulinStyle(tf.keras.losses.Loss):
@@ -52,17 +50,3 @@ class DumoulinStyle(tf.keras.losses.Loss):
         ]
 
         return tf.add_n(style_layer_losses) / len(style_layer_losses)
-
-
-class DumoulinContent(tf.keras.losses.Loss):
-
-    def __init__(self, model='vgg16', **kwargs):
-        super().__init__(**kwargs)
-
-        self.gatys_content_loss = nst_losses.GatysContent(model=model)
-
-    def call(self, y_true, y_pred):
-        content_image = y_true[0]
-        stylized_image = y_pred[0]
-
-        return self.gatys_content_loss(content_image, stylized_image)

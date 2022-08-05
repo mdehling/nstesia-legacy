@@ -16,7 +16,7 @@ class GatysContent(tf.keras.losses.Loss):
         super().__init__(**kwargs)
 
         self.content_image = content_image
-        
+
         if isinstance(model, str):
             self.content_model = nst_models.GatysContent(model=model)
         else:
@@ -28,6 +28,12 @@ class GatysContent(tf.keras.losses.Loss):
             self.content_targets = None
 
     def call(self, content_image, stylized_image):
+
+        if isinstance(content_image, tuple):
+            content_image = content_image[0]
+        if isinstance(stylized_image, tuple):
+            stylized_image = stylized_image[0]
+
         content_targets = self.content_targets or self.content_model(content_image)
         content_features = self.content_model(stylized_image)
 
