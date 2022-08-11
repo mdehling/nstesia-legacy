@@ -124,7 +124,7 @@ class ResBlock(k_layers.Layer):
         except KeyError:
             raise ValueError(ERRMSG_UNKNOWN_NORMALIZE_PARAMETER)
 
-        # The conv layers above use 'same' padding, so we need to crop in the
+        # The conv layers above use 'valid' padding, so we need to crop in the
         # residual connection to produce the same size.
         self.crop = k_layers.Cropping2D(2, name='cropping')
 
